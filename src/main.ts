@@ -23,12 +23,28 @@ type Actress = Person & {
     | "Indian"
     | "Spanish"
     | "South Korean"
-    | "Chinese";
+    | "Chinese"
+    | "Israeli-American"
+    | "Israeli";
 };
 
 //TYPE GUARD
 
 function isActress(data: unknown): data is Actress {
+  const validNationalities = [
+    "American",
+    "British",
+    "Australian",
+    "South African",
+    "French",
+    "Indian",
+    "Spanish",
+    "South Korean",
+    "Chinese",
+    "Israeli-American",
+    "Israeli",
+  ];
+
   if (
     data &&
     typeof data === "object" &&
@@ -49,7 +65,8 @@ function isActress(data: unknown): data is Actress {
     "awards" in data &&
     typeof data.awards === "string" &&
     "nationality" in data &&
-    typeof data.nationality === "string"
+    typeof data.nationality === "string" &&
+    validNationalities.includes(data.nationality)
   ) {
     return true;
   }
@@ -79,8 +96,29 @@ async function getActress(id: number): Promise<Actress | null> {
   }
 }
 
-(async () => {
-  const user = await getActress(4);
+async function getAllActresses(): Promise<Actress[]> {
+  try {
+    const resp = await fetch(`http://localhost:3333/actresses`);
+    if (!resp.ok) {
+      throw new Error(`Errore ${resp.status}`);
+    }
+    const data: unknown = await resp.json();
+    if (!Array.isArray(data) || !data.every((actress) => isActress(actress))) {
+      throw new Error("Dati non validi");
+    }
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log(error.message);
+    } else {
+      console.log(error);
+    }
+    return [];
+  }
+}
 
-  console.log(user);
+(async () => {
+  const actress = await getActress(4);
+  const actresses = await getAllActresses();
+  console.log(actress, actresses);
 })();
