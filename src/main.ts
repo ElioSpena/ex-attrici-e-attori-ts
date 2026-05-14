@@ -117,8 +117,27 @@ async function getAllActresses(): Promise<Actress[]> {
   }
 }
 
+async function getActresses(ids: number[]): Promise<Actress[] | null> {
+  try {
+    const resp = await Promise.all(ids.map((id) => getActress(id)));
+
+    if (resp.some((actress) => actress === null)) {
+      return null;
+    }
+    return resp as Actress[];
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log(error.message);
+    } else {
+      console.log(error);
+    }
+    return null;
+  }
+}
+
 (async () => {
   const actress = await getActress(4);
-  const actresses = await getAllActresses();
-  console.log(actress, actresses);
+  const allActresses = await getAllActresses();
+  const actresses = await getActresses([1, 6, 4]);
+  console.log(actress, allActresses, actresses);
 })();
