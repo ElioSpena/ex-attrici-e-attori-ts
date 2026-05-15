@@ -48,6 +48,7 @@ function isActress(data: unknown): data is Actress {
   if (
     data &&
     typeof data === "object" &&
+    data !== null &&
     "id" in data &&
     typeof data.id === "number" &&
     "name" in data &&
@@ -60,8 +61,9 @@ function isActress(data: unknown): data is Actress {
     "image" in data &&
     typeof data.image === "string" &&
     "most_famous_movies" in data &&
-    Array.isArray(data.most_famous_movies) &&
+    data.most_famous_movies instanceof Array &&
     data.most_famous_movies.length === 3 &&
+    data.most_famous_movies.every((m) => typeof m === "string") &&
     "awards" in data &&
     typeof data.awards === "string" &&
     "nationality" in data &&
@@ -100,13 +102,16 @@ async function getAllActresses(): Promise<Actress[]> {
   try {
     const resp = await fetch(`http://localhost:3333/actresses`);
     if (!resp.ok) {
-      throw new Error(`Errore ${resp.status}`);
+      throw new Error(`Errore HTTP ${resp.status}: ${resp.statusText}`);
     }
     const data: unknown = await resp.json();
-    if (!Array.isArray(data) || !data.every((actress) => isActress(actress))) {
+    if (!(data instanceof Array)) {
       throw new Error("Dati non validi");
     }
-    return data;
+
+    const validateActresses: Actress[] = data.filter(isActress);
+
+    return validateActresses;
   } catch (error) {
     if (error instanceof Error) {
       console.log(error.message);
@@ -117,21 +122,18 @@ async function getAllActresses(): Promise<Actress[]> {
   }
 }
 
-async function getActresses(ids: number[]): Promise<Actress[] | null> {
+async function getActresses(ids: number[]): Promise<(Actress | null)[]> {
   try {
     const resp = await Promise.all(ids.map((id) => getActress(id)));
-
-    if (resp.some((actress) => actress === null)) {
-      return null;
-    }
-    return resp as Actress[];
+    return resp;
+    
   } catch (error) {
     if (error instanceof Error) {
       console.log(error.message);
     } else {
       console.log(error);
     }
-    return null;
+    return [];
   }
 }
 
